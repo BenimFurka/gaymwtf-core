@@ -5,6 +5,7 @@ use crate::World;
 use crate::core::save::vec2::Vec2Save;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
+use rand::{Rng};
 
 #[derive(PartialEq, Clone, Serialize, Deserialize)]
 pub enum Direction {
@@ -17,28 +18,40 @@ pub enum Direction {
 pub trait Entity: Any + Send + Sync {
     fn get_type_tag(&self) -> &'static str;
     fn get_pos(&self) -> Vec2;
-    fn set_pos(&mut self, pos: Vec2);
     fn get_size(&self) -> Vec2;
-    fn clone_box(&self) -> Box<dyn Entity>;
+    fn get_speed(&self) -> Vec2;
+
+    fn tick(&mut self, _dt: f32, _world: &mut World) {
+        let pos = self.get_pos();
+        let speed = self.get_speed();
+        self.set_pos(pos + speed);
+
+        if rand::rng().random_range(0..100) < 1 {
+            let axis = if rand::rng().random_bool(0.5) { 0 } else { 1 };
+            let direction = if rand::rng().random_bool(0.5) { 1.0 } else { -1.0 };
+
+            let new_speed = match axis {
+                0 => Vec2::new(direction * 1.0, speed.y),
+                1 => Vec2::new(speed.x, direction * 1.0),
+                _ => speed,
+            };
+
+            self.set_speed(new_speed);
+        }
+    }
     fn draw(&self, batch: &mut DrawBatch);
 
-    fn update(&mut self, _dt: f32, _world: &mut World) {}
+    fn set_size(&mut self, _size: Vec2);
+    fn set_pos(&mut self, pos: Vec2);
+    fn set_speed(&mut self, speed: Vec2);
 
-    fn set_size(&mut self, _size: Vec2) {}
-
-    fn blocks(&self, _other: &dyn Entity) -> bool {
-        true
-    }
-
-    fn interact(&mut self, _other: &mut dyn Entity) -> bool {
-        false
-    }
-
+    fn interact(&mut self, _other: &mut dyn Entity) {}
     fn hurt(&mut self, _damage: i32, _attack_dir: Direction) {}
-
-    fn can_swim(&self) -> bool {
-        false
+    fn collision(&mut self, other: &mut dyn Entity) {
+        self.set_speed(Vec2::new(0.0, 0.0));
     }
+
+    fn clone_box(&self) -> Box<dyn Entity>;
 }
 
 #[derive(Serialize, Deserialize)]

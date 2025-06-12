@@ -1,5 +1,5 @@
 use macroquad::math::Vec2;
-use crate::{Chunk, DrawBatch, Entity, World};
+use crate::{DrawBatch, Entity, World};
 use std::any::Any;
 use serde::{Serialize, Deserialize};
 use crate::core::save::vec2::Vec2Save;
@@ -8,22 +8,19 @@ use std::collections::HashMap;
 pub trait Tile: Any + Send + Sync {
     fn get_type_tag(&self) -> &'static str;
     fn get_pos(&self) -> Vec2;
-    fn set_pos(&mut self, pos: Vec2);
     fn get_size(&self) -> Vec2;
-    fn clone_box(&self) -> Box<dyn Tile>;
 
+    fn tick(&mut self, _dt: f32, _world: &mut World) {}
     fn draw(&self, batch: &mut DrawBatch, pos: Vec2);
-    fn may_pass(&self) -> bool;
+
+    fn set_pos(&mut self, pos: Vec2);
+    fn set_size(&mut self, _size: Vec2) {}
 
     fn interact(&mut self, _other: &mut dyn Entity) -> bool {
         false
     }
 
-    fn update(&mut self, _dt: f32, _world: &mut World) {}
-
-    fn tick(&mut self, _level: &mut Chunk) {}
-
-    fn set_size(&mut self, _size: Vec2) {}
+    fn clone_box(&self) -> Box<dyn Tile>;
 }
 
 #[derive(Serialize, Deserialize)]

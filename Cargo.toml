@@ -13,6 +13,7 @@ log = { version = "0.4", features = ["std"] }
 miniquad = "0.4.5"
 anyhow = "1.0.86"
 image = { version = "0.24.9", default-features = false, features = ["png"] }
+rand = "0.9.1"
 
 [lib]
 name = "gaymwtf_core"

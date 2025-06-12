@@ -1,0 +1,12 @@
+[package]
+name = "gaymwtf-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gaymwtf-core = { path = "../"}
+macroquad = "0.4"
+rand = "0.9"
+
+[profile.release]
+debug = false

@@ -2,6 +2,7 @@ use macroquad::prelude::*;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use std::fs;
+use crate::Entity;
 
 use crate::{
     Chunk, EntityRegistry, TileRegistry, BiomeRegistry,
@@ -95,21 +96,94 @@ impl World {
             }
         }
 
+        movements.sort_by(|a, b| {
+            if a.0 == b.0 {
+                b.2.cmp(&a.2)
+            } else {
+                std::cmp::Ordering::Equal
+            }
+        });
+
         for (old_pos, new_pos, entity_index) in movements {
             if let Some(mut chunk) = self.chunks.remove(&old_pos) {
-                let entity = chunk.entities.remove(entity_index);
-                self.chunks.insert(old_pos, chunk);
-                if let Some(new_chunk) = self.chunks.get_mut(&new_pos) {
-                    new_chunk.entities.push(entity);
+                if entity_index < chunk.entities.len() {
+                    let entity = chunk.entities.remove(entity_index);
+                    self.chunks.insert(old_pos, chunk);
+                    if let Some(new_chunk) = self.chunks.get_mut(&new_pos) {
+                        new_chunk.entities.push(entity);
+                    }
+                } else {
+                    self.chunks.insert(old_pos, chunk);
                 }
             }
         }
+
+        self.check_entity_collisions();
 
         let visible_chunks_copy = self.visible_chunks.clone();
         for chunk_pos in visible_chunks_copy {
             if let Some(mut chunk) = self.chunks.remove(&chunk_pos) {
                 chunk.update(self, camera_pos, screen_size, get_frame_time());
                 self.chunks.insert(chunk_pos, chunk);
+            }
+        }
+    }
+    fn check_entity_collisions(&mut self) {
+        let mut entities: Vec<Box<dyn Entity>> = Vec::new();
+        let mut chunk_positions = Vec::new();
+
+        for &chunk_pos in &self.visible_chunks {
+            if let Some(chunk) = self.chunks.get_mut(&chunk_pos) {
+                for entity in chunk.entities.drain(..) {
+                    entities.push(entity);
+                    chunk_positions.push(chunk_pos);
+                }
+            }
+        }
+
+        for i in 0..entities.len() {
+            for j in (i + 1)..entities.len() {
+                let (entity1, entity2) = entities.split_at_mut(j);
+                let entity1 = &mut entity1[i];
+                let entity2 = &mut entity2[0];
+
+                let pos1 = entity1.get_pos();
+                let speed1 = entity1.get_speed();
+                let size1 = entity1.get_size();
+                let next_pos1 = pos1 + speed1;
+
+                let pos2 = entity2.get_pos();
+                let speed2 = entity2.get_speed();
+                let size2 = entity2.get_size();
+                let next_pos2 = pos2 + speed2;
+
+                let will_collide = next_pos1.x < next_pos2.x + size2.x &&
+                                 next_pos1.x + size1.x > next_pos2.x &&
+                                 next_pos1.y < next_pos2.y + size2.y &&
+                                 next_pos1.y + size1.y > next_pos2.y;
+
+                let moving_towards_each_other = {
+                    let relative_velocity = speed1 - speed2;
+                    let direction = pos2 - pos1;
+                    relative_velocity.dot(direction) > 0.0
+                };
+
+                if will_collide && moving_towards_each_other {
+                    let mut entity1_copy = entity1.clone_box();
+                    let mut entity2_copy = entity2.clone_box();
+                    
+                    entity1_copy.collision(&mut *entity2_copy);
+                    entity2_copy.collision(&mut *entity1_copy);
+                    
+                    entity1.set_speed(entity1_copy.get_speed());
+                    entity2.set_speed(entity2_copy.get_speed());
+                }
+            }
+        }
+
+        for (entity, &chunk_pos) in entities.into_iter().zip(chunk_positions.iter()) {
+            if let Some(chunk) = self.chunks.get_mut(&chunk_pos) {
+                chunk.entities.push(entity);
             }
         }
     }

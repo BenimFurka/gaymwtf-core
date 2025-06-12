@@ -50,13 +50,13 @@ impl Chunk {
 
         for &entity_index in &self.active_entities {
             if let Some(entity) = self.entities.get_mut(entity_index) {
-                entity.update(dt, world);
+                entity.tick(dt, world);
             }
         }
 
         for &tile_index in &self.visible_tiles {
             if let Some(tile) = self.tiles.get_mut(tile_index) {
-                tile.update(dt, world);
+                tile.tick(dt, world);
             }
         }
     }
