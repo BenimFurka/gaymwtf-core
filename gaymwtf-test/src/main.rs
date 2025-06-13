@@ -10,6 +10,7 @@ use ::rand::Rng;
 #[derive(Clone)]
 struct Air {
     pos: Vec2,
+    size: Vec2,
 }
 
 impl Tile for Air {
@@ -18,7 +19,7 @@ impl Tile for Air {
     fn get_size(&self) -> Vec2 { vec2(TILE_SIZE, TILE_SIZE) }
 
     fn set_pos(&mut self, pos: Vec2) { self.pos = pos; }
-    fn set_size(&mut self, _size: Vec2) {}
+    fn set_size(&mut self, size: Vec2) { self.size = size; }
 
     fn tick(&mut self, _dt: f32, _world: &mut World) {}
     fn draw(&self, _batch: &mut DrawBatch, _pos: Vec2) { }
@@ -29,6 +30,7 @@ impl Tile for Air {
 #[derive(Clone)]
 struct Stone {
     pos: Vec2,
+    size: Vec2,
     texture: Texture2D,
 }
 
@@ -38,7 +40,7 @@ impl Tile for Stone {
     fn get_size(&self) -> Vec2 { vec2(TILE_SIZE, TILE_SIZE) }
 
     fn set_pos(&mut self, pos: Vec2) { self.pos = pos; }
-    fn set_size(&mut self, _size: Vec2) {}
+    fn set_size(&mut self, size: Vec2) { self.size = size; }
 
     fn tick(&mut self, _dt: f32, _world: &mut World) {}
     fn draw(&self, batch: &mut DrawBatch, pos: Vec2) {
@@ -53,7 +55,7 @@ impl Tile for Stone {
 #[derive(Clone)]
 struct Mob {
     pos: Vec2,
-    speed: Vec2,
+    velocity: Vec2,
     size: Vec2,
     texture: Texture2D,
 }
@@ -62,11 +64,11 @@ impl Entity for Mob {
     fn get_type_tag(&self) -> &'static str { "mob" }
     fn get_pos(&self) -> Vec2 { self.pos }
     fn get_size(&self) -> Vec2 { vec2(TILE_SIZE, TILE_SIZE) }
-    fn get_speed(&self) -> Vec2 { self.speed}
+    fn get_velocity(&self) -> Vec2 { self.velocity}
 
     fn set_pos(&mut self, pos: Vec2) { self.pos = pos; }
-    fn set_size(&mut self, _size: Vec2) {}
-    fn set_speed(&mut self, speed: Vec2) { self.speed = speed; }
+    fn set_size(&mut self, size: Vec2) { self.size = size;}
+    fn set_velocity(&mut self, velocity: Vec2) { self.velocity = velocity; }
 
     fn draw(&self, batch: &mut DrawBatch) {
         batch.add(self.texture.clone(), self.pos, TILE_SIZE, Some(self.size));
@@ -119,15 +121,15 @@ fn generate_chunk(pos: Vec2, tile_registry: &TileRegistry, biome_registry: &Biom
 
 async fn setup() -> World {
     let mut tile_registry = TileRegistry::new();
-    tile_registry.register(Air { pos: Vec2::ZERO });
+    tile_registry.register(Air { pos: Vec2::ZERO, size: Vec2::new(TILE_SIZE, TILE_SIZE) });
 
     let stone_texture = Texture2D::from_rgba8(16, 16, &[128; 16 * 16 * 4]);
-    tile_registry.register(Stone { pos: Vec2::ZERO, texture: stone_texture });
+    tile_registry.register(Stone { pos: Vec2::ZERO, size: Vec2::new(TILE_SIZE, TILE_SIZE), texture: stone_texture });
 
     let mut entity_registry = EntityRegistry::new();
 
     let mob_texture = Texture2D::from_rgba8(16, 16, &[255; 16 * 16 * 4]);
-    entity_registry.register(Mob { pos: Vec2::ZERO, speed: Vec2::ZERO, size: Vec2::new(TILE_SIZE, TILE_SIZE), texture: mob_texture });
+    entity_registry.register(Mob { pos: Vec2::ZERO, velocity: Vec2::ZERO, size: Vec2::new(TILE_SIZE, TILE_SIZE), texture: mob_texture });
 
     let mut biome_registry = BiomeRegistry::new();
     biome_registry.register(Plains);

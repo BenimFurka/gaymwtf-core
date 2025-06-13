@@ -6,6 +6,7 @@ use crate::core::save::vec2::Vec2Save;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use rand::{Rng};
+use macroquad::prelude::vec2;
 
 #[derive(PartialEq, Clone, Serialize, Deserialize)]
 pub enum Direction {
@@ -19,38 +20,72 @@ pub trait Entity: Any + Send + Sync {
     fn get_type_tag(&self) -> &'static str;
     fn get_pos(&self) -> Vec2;
     fn get_size(&self) -> Vec2;
-    fn get_speed(&self) -> Vec2;
+    fn get_velocity(&self) -> Vec2;
 
     fn tick(&mut self, _dt: f32, _world: &mut World) {
         let pos = self.get_pos();
-        let speed = self.get_speed();
-        self.set_pos(pos + speed);
+        let velocity = self.get_velocity();
+        self.set_pos(pos + velocity);
 
-        if rand::rng().random_range(0..100) < 1 {
+        if rand::rng().random_range(0..100) < 10 {
             let axis = if rand::rng().random_bool(0.5) { 0 } else { 1 };
             let direction = if rand::rng().random_bool(0.5) { 1.0 } else { -1.0 };
 
-            let new_speed = match axis {
-                0 => Vec2::new(direction * 1.0, speed.y),
-                1 => Vec2::new(speed.x, direction * 1.0),
-                _ => speed,
+            let new_velocity = match axis {
+                0 => Vec2::new(direction * 1.0, velocity.y),
+                1 => Vec2::new(velocity.x, direction * 1.0),
+                _ => velocity,
             };
 
-            self.set_speed(new_speed);
+            self.set_velocity(new_velocity);
         }
     }
     fn draw(&self, batch: &mut DrawBatch);
 
     fn set_size(&mut self, _size: Vec2);
     fn set_pos(&mut self, pos: Vec2);
-    fn set_speed(&mut self, speed: Vec2);
+    fn set_velocity(&mut self, velocity: Vec2);
 
     fn interact(&mut self, _other: &mut dyn Entity) {}
     fn hurt(&mut self, _damage: i32, _attack_dir: Direction) {}
     fn collision(&mut self, other: &mut dyn Entity) {
-        self.set_speed(Vec2::new(0.0, 0.0));
+        let buffer = 1.0;
+        let self_pos = self.get_pos();
+        let self_size = self.get_size();
+        let other_pos = other.get_pos();
+        let other_size = other.get_size();
+        
+        let self_bounds = (
+            self_pos + vec2(buffer, buffer),
+            self_pos + self_size - vec2(buffer, buffer)
+        );
+        
+        let other_bounds = (
+            other_pos + vec2(buffer, buffer),
+            other_pos + other_size - vec2(buffer, buffer)
+        );
+        
+        if self_bounds.0.x < other_bounds.1.x &&
+           self_bounds.1.x > other_bounds.0.x &&
+           self_bounds.0.y < other_bounds.1.y &&
+           self_bounds.1.y > other_bounds.0.y {
+            let mut velocity = self.get_velocity();
+            
+            let x_overlap = (self_bounds.1.x - other_bounds.0.x).min(other_bounds.1.x - self_bounds.0.x);
+            let y_overlap = (self_bounds.1.y - other_bounds.0.y).min(other_bounds.1.y - self_bounds.0.y);
+            
+            if x_overlap < y_overlap {
+                velocity.x = 0.0;
+            } else if x_overlap > y_overlap {
+                velocity.y = 0.0;
+            } else {
+                velocity.x = 0.0;
+                velocity.y = 0.0;
+            }
+            
+            self.set_velocity(velocity);
+        }
     }
-
     fn clone_box(&self) -> Box<dyn Entity>;
 }
 

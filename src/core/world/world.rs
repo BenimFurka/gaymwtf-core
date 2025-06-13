@@ -2,11 +2,10 @@ use macroquad::prelude::*;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use std::fs;
-use crate::Entity;
 
 use crate::{
     Chunk, EntityRegistry, TileRegistry, BiomeRegistry,
-    DrawBatch, CHUNK_PIXELS, log_world,
+    DrawBatch, CHUNK_PIXELS, log_world, Tile, Entity
 };
 
 #[derive(Serialize, Deserialize)]
@@ -148,14 +147,14 @@ impl World {
                 let entity2 = &mut entity2[0];
 
                 let pos1 = entity1.get_pos();
-                let speed1 = entity1.get_speed();
+                let velocity1 = entity1.get_velocity();
                 let size1 = entity1.get_size();
-                let next_pos1 = pos1 + speed1;
+                let next_pos1 = pos1 + velocity1;
 
                 let pos2 = entity2.get_pos();
-                let speed2 = entity2.get_speed();
+                let velocity2 = entity2.get_velocity();
                 let size2 = entity2.get_size();
-                let next_pos2 = pos2 + speed2;
+                let next_pos2 = pos2 + velocity2;
 
                 let will_collide = next_pos1.x < next_pos2.x + size2.x &&
                                  next_pos1.x + size1.x > next_pos2.x &&
@@ -163,20 +162,17 @@ impl World {
                                  next_pos1.y + size1.y > next_pos2.y;
 
                 let moving_towards_each_other = {
-                    let relative_velocity = speed1 - speed2;
+                    let relative_velocity = velocity1 - velocity2;
                     let direction = pos2 - pos1;
                     relative_velocity.dot(direction) > 0.0
                 };
 
                 if will_collide && moving_towards_each_other {
-                    let mut entity1_copy = entity1.clone_box();
-                    let mut entity2_copy = entity2.clone_box();
+                    let entity1: &mut dyn Entity = &mut **entity1;
+                    let entity2: &mut dyn Entity = &mut **entity2;
                     
-                    entity1_copy.collision(&mut *entity2_copy);
-                    entity2_copy.collision(&mut *entity1_copy);
-                    
-                    entity1.set_speed(entity1_copy.get_speed());
-                    entity2.set_speed(entity2_copy.get_speed());
+                    entity1.collision(entity2);
+                    entity2.collision(entity1);
                 }
             }
         }
@@ -221,5 +217,34 @@ impl World {
             (pos.x / CHUNK_PIXELS).floor() as i32,
             (pos.y / CHUNK_PIXELS).floor() as i32,
         )
+    }
+
+    pub fn get_entities_by_type(&self, type_tag: &str) -> Vec<&Box<dyn Entity>> {
+        let mut entities = Vec::new();
+        for &chunk_pos in &self.visible_chunks {
+            if let Some(chunk) = self.chunks.get(&chunk_pos) {
+                for entity in &chunk.entities {
+                    if entity.get_type_tag() == type_tag {
+                        entities.push(entity);
+                    }
+                }
+            }
+        }
+        entities
+    }
+
+    pub fn get_tiles_by_type(&self, type_tag: &str) -> Vec<&Box<dyn Tile>> {
+        let mut tiles = Vec::new();
+
+        for &chunk_pos in &self.visible_chunks {
+            if let Some(chunk) = self.chunks.get(&chunk_pos) {
+                for tile in &chunk.tiles {
+                    if tile.get_type_tag() == type_tag {
+                        tiles.push(tile);
+                    }
+                }
+            }
+        }
+        tiles
     }
 }

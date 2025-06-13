@@ -158,4 +158,26 @@ impl Chunk {
 
         Ok(chunk)
     }
+
+    pub fn get_entities_by_type(&self, type_tag: &str) -> Vec<&Box<dyn Entity>> {
+        let mut entities = Vec::new();
+
+        for entity in &self.entities {
+            if entity.get_type_tag() == type_tag {
+                entities.push(entity);
+            }
+        }
+        entities
+    }
+
+    pub fn get_tiles_by_type(&self, type_tag: &str) -> Vec<&Box<dyn Tile>> {
+        let mut tiles = Vec::new();
+
+        for tile in &self.tiles {
+            if tile.get_type_tag() == type_tag {
+                tiles.push(tile);
+            }
+        }
+        tiles
+    }
 }
