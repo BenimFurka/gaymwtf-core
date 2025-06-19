@@ -13,7 +13,7 @@ pub enum MenuAction {
 pub trait Menu {
     fn update(&mut self, dt: f32) -> MenuAction;
 
-    fn draw(&self, batch: &mut DrawBatch);
+    fn draw(&mut self, batch: &mut DrawBatch);
 
     fn name(&self) -> &str;
 }
