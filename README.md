@@ -79,7 +79,7 @@ async fn main() {
 
 ### Test Project
 
-The repository includes a `gaymwtf-test` directory that serves as a working example of how to use the game engine. This test project demonstrates:
+The repository includes a `gaymwtf-test` example that serves as a working example of how to use the game engine. This test project demonstrates:
 
 - Setting up custom tiles, entities, and biomes
 - World generation
@@ -89,8 +89,7 @@ The repository includes a `gaymwtf-test` directory that serves as a working exam
 To run the test project:
 
 ```bash
-cd gaymwtf-test
-cargo run --release
+cargo run --example gaymwtf-test
 ```
 
 ## Project Structure
