@@ -2,6 +2,12 @@
 name = "gaymwtf-core"
 version = "0.1.0"
 edition = "2021"
+authors = ["BenimFurka <furkajr@mail.ru>"]
+description = "A modular 2D game engine and framework built with Rust and Macroquad."
+license = "GPL-3.0"
+repository = "https://github.com/BenimFurka/gaymwtf-core"
+keywords = ["game-engine", "2d", "macroquad", "ecs"]
+categories = ["game-engines", "rendering"]
 
 [dependencies]
 macroquad = "0.4.5"
@@ -20,3 +26,7 @@ path = "src/lib.rs"
 
 [profile.release]
 debug = false
+
+[[example]]
+name = "gaymwtf-test"
+doc = true

@@ -2,7 +2,6 @@ use macroquad::prelude::*;
 use gaymwtf_core::{
     Tile, TileRegistry, Object, ObjectRegistry, Biome, BiomeRegistry, Chunk, World, DrawBatch, TILE_SIZE, CHUNK_SIZE, CHUNK_PIXELS
 };
-use ::rand::{Rng, rng};
 
 // --- Concrete Tile Implementations ---
 
@@ -57,38 +56,57 @@ struct Mob {
     velocity: Vec2,
     size: Vec2,
     texture: Texture2D,
+    move_timer: f32,
+    direction_change_timer: f32,
+}
+
+impl Mob {
+    fn new(pos: Vec2, texture: Texture2D) -> Self {
+        Self {
+            pos,
+            velocity: Vec2::ZERO,
+            size: vec2(TILE_SIZE, TILE_SIZE),
+            texture,
+            move_timer: 0.0,
+            direction_change_timer: 0.0,
+        }
+    }
 }
 
 impl Object for Mob {
     fn get_type_tag(&self) -> &'static str { "mob" }
     fn get_pos(&self) -> Vec2 { self.pos }
     fn get_size(&self) -> Vec2 { vec2(TILE_SIZE, TILE_SIZE) }
-    fn get_velocity(&self) -> Vec2 { self.velocity}
+    fn get_velocity(&self) -> Vec2 { self.velocity }
 
     fn set_pos(&mut self, pos: Vec2) { self.pos = pos; }
-    fn set_size(&mut self, size: Vec2) { self.size = size;}
+    fn set_size(&mut self, size: Vec2) { self.size = size; }
     fn set_velocity(&mut self, velocity: Vec2) { self.velocity = velocity; }
 
     fn draw(&self, batch: &mut DrawBatch) {
         batch.add(self.texture.clone(), self.pos, TILE_SIZE, Some(self.size));
     }
-    fn tick(&mut self, _dt: f32, _world: &mut World) {
-        let pos = self.get_pos();
-        let velocity = self.get_velocity();
-        self.set_pos(pos + velocity);
 
-        if rng().random_range(0..100) < 10 {
-            let axis = if rng().random_bool(0.5) { 0 } else { 1 };
-            let direction = if rng().random_bool(0.5) { 1.0 } else { -1.0 };
+    fn tick(&mut self, dt: f32, _world: &mut World) {
+        self.move_timer += dt;
+        self.direction_change_timer += dt;
 
-            let new_velocity = match axis {
-                0 => Vec2::new(direction * 1.0, velocity.y),
-                1 => Vec2::new(velocity.x, direction * 1.0),
-                _ => velocity,
+        if self.direction_change_timer >= 1.0 {
+            self.direction_change_timer = 0.0;
+            
+            let x = self.pos.x as i32;
+            let y = self.pos.y as i32;
+            
+            let axis = (x + y + (self.move_timer * 1000.0) as i32) % 2;
+            let direction = if (x + y) % 2 == 0 { 1.0 } else { -1.0 };
+
+            self.velocity = match axis {
+                0 => Vec2::new(direction * 1.0, 0.0),
+                _ => Vec2::new(0.0, direction * 1.0),
             };
-
-            self.set_velocity(new_velocity);
         }
+
+        self.pos += self.velocity;
     }
 
     fn clone_box(&self) -> Box<dyn Object> { Box::new(self.clone()) }
@@ -110,9 +128,8 @@ impl Biome for Plains {
 fn generate_chunk(pos: Vec2, tile_registry: &TileRegistry, biome_registry: &BiomeRegistry, object_registry: &ObjectRegistry) -> Chunk {
     let mut chunk = Chunk::new(pos);
     let biome = biome_registry.find_biome(0.0, 0.0, 0.0).unwrap(); 
-    let mut rang = rng();
 
-    let chunk_world_pos = pos * CHUNK_PIXELS as f32;
+    let chunk_world_pos = pos * CHUNK_PIXELS;
 
     for y in 0..CHUNK_SIZE {
         for x in 0..CHUNK_SIZE {
@@ -124,7 +141,8 @@ fn generate_chunk(pos: Vec2, tile_registry: &TileRegistry, biome_registry: &Biom
             chunk.tiles.push(tile); 
 
             for (object_type, chance) in biome.get_spawnable_objects() {
-                if rang.random::<f32>() < chance {
+                let should_spawn = ((x + y * CHUNK_SIZE) as f32 % 100.0) / 100.0 < chance;
+                if should_spawn {
                     if let Some(mut obj) = object_registry.create_object_by_id(object_type) {
                         obj.set_pos(tile_pos);
                         chunk.objects.push(obj);
@@ -146,7 +164,7 @@ async fn setup() -> World {
     let mut object_registry = ObjectRegistry::new();
 
     let mob_texture = Texture2D::from_rgba8(16, 16, &[255; 16 * 16 * 4]);
-    object_registry.register(Mob { pos: Vec2::ZERO, velocity: Vec2::ZERO, size: Vec2::new(TILE_SIZE, TILE_SIZE), texture: mob_texture });
+    object_registry.register(Mob::new(Vec2::ZERO, mob_texture));
 
     let mut biome_registry = BiomeRegistry::new();
     biome_registry.register(Plains);
