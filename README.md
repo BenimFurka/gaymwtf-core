@@ -1,7 +1,11 @@
 # GaymWTF Core
 
 [![Rust](https://img.shields.io/badge/rust-stable-orange.svg)](https://www.rust-lang.org/)
+[![Macroquad](https://img.shields.io/badge/macroquad-0.4.x-blue)](https://github.com/not-fl3/macroquad)
+
+[![Crates.io](https://img.shields.io/crates/v/gaymwtf-core)](https://crates.io/crates/gaymwtf-core)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
 
 A modular 2D game engine and framework built with Rust and Macroquad.
 
