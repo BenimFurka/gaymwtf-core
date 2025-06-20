@@ -28,13 +28,13 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-gaymwtf-core = { git = "https://github.com/BenimFurka/gaymwtf-core.git" }
+gaymwtf-core = "0.1.0"
 ```
 
 Or run:
 
 ```bash
-cargo add gaymwtf-core --git https://github.com/BenimFurka/gaymwtf-core.git
+cargo add gaymwtf-core
 ```
 
 ## Usage
