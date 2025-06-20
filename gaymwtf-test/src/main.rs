@@ -1,9 +1,8 @@
 use macroquad::prelude::*;
 use gaymwtf_core::{
-    Tile, TileRegistry, Entity, EntityRegistry, Biome, BiomeRegistry, Chunk, World, DrawBatch, TILE_SIZE, CHUNK_SIZE, CHUNK_PIXELS
+    Tile, TileRegistry, Object, ObjectRegistry, Biome, BiomeRegistry, Chunk, World, DrawBatch, TILE_SIZE, CHUNK_SIZE, CHUNK_PIXELS
 };
-use ::rand::rng;
-use ::rand::Rng;
+use ::rand::{Rng, rng};
 
 // --- Concrete Tile Implementations ---
 
@@ -50,7 +49,7 @@ impl Tile for Stone {
     fn clone_box(&self) -> Box<dyn Tile> { Box::new(self.clone()) }
 }
 
-// --- Concrete Entity Implementations ---
+// --- Concrete Object Implementations ---
 
 #[derive(Clone)]
 struct Mob {
@@ -60,7 +59,7 @@ struct Mob {
     texture: Texture2D,
 }
 
-impl Entity for Mob {
+impl Object for Mob {
     fn get_type_tag(&self) -> &'static str { "mob" }
     fn get_pos(&self) -> Vec2 { self.pos }
     fn get_size(&self) -> Vec2 { vec2(TILE_SIZE, TILE_SIZE) }
@@ -73,8 +72,26 @@ impl Entity for Mob {
     fn draw(&self, batch: &mut DrawBatch) {
         batch.add(self.texture.clone(), self.pos, TILE_SIZE, Some(self.size));
     }
+    fn tick(&mut self, _dt: f32, _world: &mut World) {
+        let pos = self.get_pos();
+        let velocity = self.get_velocity();
+        self.set_pos(pos + velocity);
 
-    fn clone_box(&self) -> Box<dyn Entity> { Box::new(self.clone()) }
+        if rng().random_range(0..100) < 10 {
+            let axis = if rng().random_bool(0.5) { 0 } else { 1 };
+            let direction = if rng().random_bool(0.5) { 1.0 } else { -1.0 };
+
+            let new_velocity = match axis {
+                0 => Vec2::new(direction * 1.0, velocity.y),
+                1 => Vec2::new(velocity.x, direction * 1.0),
+                _ => velocity,
+            };
+
+            self.set_velocity(new_velocity);
+        }
+    }
+
+    fn clone_box(&self) -> Box<dyn Object> { Box::new(self.clone()) }
 }
 
 // --- Concrete Biome Implementations ---
@@ -86,11 +103,11 @@ impl Biome for Plains {
     fn get_type_tag(&self) -> &'static str { "plains" }
     fn is_suitable(&self, _height: f64, _moisture: f64, _temperature: f64) -> bool { true }
     fn get_ground_tile_type(&self) -> &'static str { "stone" }
-    fn get_spawnable_entities(&self) -> Vec<(&'static str, f32)> { vec![("mob", 0.05)] }
+    fn get_spawnable_objects(&self) -> Vec<(&'static str, f32)> { vec![("mob", 0.05)] }
     fn clone_box(&self) -> Box<dyn Biome> { Box::new(self.clone()) }
 }
 
-fn generate_chunk(pos: Vec2, tile_registry: &TileRegistry, biome_registry: &BiomeRegistry, entity_registry: &EntityRegistry) -> Chunk {
+fn generate_chunk(pos: Vec2, tile_registry: &TileRegistry, biome_registry: &BiomeRegistry, object_registry: &ObjectRegistry) -> Chunk {
     let mut chunk = Chunk::new(pos);
     let biome = biome_registry.find_biome(0.0, 0.0, 0.0).unwrap(); 
     let mut rang = rng();
@@ -106,11 +123,11 @@ fn generate_chunk(pos: Vec2, tile_registry: &TileRegistry, biome_registry: &Biom
             tile.set_pos(tile_pos);
             chunk.tiles.push(tile); 
 
-            for (entity_type, chance) in biome.get_spawnable_entities() {
+            for (object_type, chance) in biome.get_spawnable_objects() {
                 if rang.random::<f32>() < chance {
-                    if let Some(mut entity) = entity_registry.create_entity_by_id(entity_type) {
-                        entity.set_pos(tile_pos);
-                        chunk.entities.push(entity);
+                    if let Some(mut obj) = object_registry.create_object_by_id(object_type) {
+                        obj.set_pos(tile_pos);
+                        chunk.objects.push(obj);
                     }
                 }
             }
@@ -126,20 +143,20 @@ async fn setup() -> World {
     let stone_texture = Texture2D::from_rgba8(16, 16, &[128; 16 * 16 * 4]);
     tile_registry.register(Stone { pos: Vec2::ZERO, size: Vec2::new(TILE_SIZE, TILE_SIZE), texture: stone_texture });
 
-    let mut entity_registry = EntityRegistry::new();
+    let mut object_registry = ObjectRegistry::new();
 
     let mob_texture = Texture2D::from_rgba8(16, 16, &[255; 16 * 16 * 4]);
-    entity_registry.register(Mob { pos: Vec2::ZERO, velocity: Vec2::ZERO, size: Vec2::new(TILE_SIZE, TILE_SIZE), texture: mob_texture });
+    object_registry.register(Mob { pos: Vec2::ZERO, velocity: Vec2::ZERO, size: Vec2::new(TILE_SIZE, TILE_SIZE), texture: mob_texture });
 
     let mut biome_registry = BiomeRegistry::new();
     biome_registry.register(Plains);
 
-    let mut world = World::new("test-world", tile_registry, entity_registry, biome_registry);
+    let mut world = World::new("test-world", tile_registry, object_registry, biome_registry);
 
     for y in -2..=2 {
         for x in -2..=2 {
             let chunk_pos = vec2(x as f32, y as f32);
-            let chunk = generate_chunk(chunk_pos, &world.tile_registry, &world.biome_registry, &world.entity_registry);
+            let chunk = generate_chunk(chunk_pos, &world.tile_registry, &world.biome_registry, &world.object_registry);
             world.add_chunk(chunk);
         }
     }

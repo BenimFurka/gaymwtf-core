@@ -3,25 +3,25 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     core::save::vec2::Vec2Save,
-    Entity, EntityRegistry, SerializableEntity, SerializableTile, Tile, TileRegistry, World,
+    Object, ObjectRegistry, SerializableObject, SerializableTile, Tile, TileRegistry, World,
     log_chunk,
-    DrawBatch, CHUNK_PIXELS, CHUNK_SIZE, TILE_SIZE, ENTITY_ACTIVATION_MARGIN,
+    DrawBatch, CHUNK_PIXELS, CHUNK_SIZE, TILE_SIZE, OBJECT_ACTIVATION_MARGIN,
 };
 
 pub struct Chunk {
     pub tiles: Vec<Box<dyn Tile>>,
-    pub entities: Vec<Box<dyn Entity>>,
+    pub objects: Vec<Box<dyn Object>>,
     pub pos: Vec2,
     bounds: (Vec2, Vec2),
     visible_tiles: Vec<usize>,
-    active_entities: Vec<usize>,
+    active_objects: Vec<usize>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct ChunkData {
     pub pos: Vec2Save,
     pub tiles: Vec<String>,
-    pub entities: Vec<String>,
+    pub objects: Vec<String>,
 }
 
 impl Chunk {
@@ -32,11 +32,11 @@ impl Chunk {
 
         Self {
             tiles: Vec::with_capacity(CHUNK_SIZE * CHUNK_SIZE),
-            entities: Vec::new(),
+            objects: Vec::new(),
             pos,
             bounds: (min, max),
             visible_tiles: Vec::new(),
-            active_entities: Vec::new(),
+            active_objects: Vec::new(),
         }
     }
 
@@ -45,12 +45,12 @@ impl Chunk {
             return;
         }
 
-        self.update_active_entities(camera_pos, screen_size);
+        self.update_active_objects(camera_pos, screen_size);
         self.update_visible_tiles(camera_pos, screen_size);
 
-        for &entity_index in &self.active_entities {
-            if let Some(entity) = self.entities.get_mut(entity_index) {
-                entity.tick(dt, world);
+        for &obj_index in &self.active_objects {
+            if let Some(obj) = self.objects.get_mut(obj_index) {
+                obj.tick(dt, world);
             }
         }
 
@@ -74,10 +74,10 @@ impl Chunk {
         }
     }
 
-    pub fn draw_entities(&mut self, batch: &mut DrawBatch) {
-        for &entity_index in &self.active_entities {
-            if let Some(entity) = self.entities.get(entity_index) {
-                entity.draw(batch);
+    pub fn draw_objects(&mut self, batch: &mut DrawBatch) {
+        for &obj_index in &self.active_objects {
+            if let Some(obj) = self.objects.get(obj_index) {
+                obj.draw(batch);
             }
         }
     }
@@ -117,26 +117,26 @@ impl Chunk {
         }
     }
 
-    fn update_active_entities(&mut self, camera_pos: Vec2, screen_size: Vec2) {
-        self.active_entities.clear();
-        let screen_min = camera_pos - screen_size / 2.0 - Vec2::splat(ENTITY_ACTIVATION_MARGIN);
-        let screen_max = camera_pos + screen_size / 2.0 + Vec2::splat(ENTITY_ACTIVATION_MARGIN);
+    fn update_active_objects(&mut self, camera_pos: Vec2, screen_size: Vec2) {
+        self.active_objects.clear();
+        let screen_min = camera_pos - screen_size / 2.0 - Vec2::splat(OBJECT_ACTIVATION_MARGIN);
+        let screen_max = camera_pos + screen_size / 2.0 + Vec2::splat(OBJECT_ACTIVATION_MARGIN);
 
-        for (index, entity) in self.entities.iter().enumerate() {
-            let pos = entity.get_pos();
+        for (index, obj) in self.objects.iter().enumerate() {
+            let pos = obj.get_pos();
             if pos.x >= screen_min.x && pos.x <= screen_max.x && pos.y >= screen_min.y && pos.y <= screen_max.y {
-                self.active_entities.push(index);
+                self.active_objects.push(index);
             }
         }
     }
 
     pub fn serialize(&self) -> String {
         let tiles: Vec<String> = self.tiles.iter().map(|tile| tile.serialize()).collect();
-        let entities: Vec<String> = self.entities.iter().map(|entity| entity.serialize()).collect();
+        let objects: Vec<String> = self.objects.iter().map(|obj| obj.serialize()).collect();
         let data = ChunkData {
             pos: Vec2Save::from(self.pos),
             tiles,
-            entities,
+            objects,
         };
         serde_json::to_string(&data).unwrap()
     }
@@ -144,30 +144,30 @@ impl Chunk {
     pub fn deserialize(
         data: &str,
         tile_registry: &TileRegistry,
-        entity_registry: &EntityRegistry,
+        object_registry: &ObjectRegistry,
     ) -> Result<Self, String> {
         let data: ChunkData = serde_json::from_str(data).map_err(|e| e.to_string())?;
         let pos = Vec2::from(data.pos);
 
         let tiles_res: Result<Vec<_>, _> = data.tiles.iter().map(|tile_data| tile_registry.deserialize_tile(tile_data)).collect();
-        let entities_res: Result<Vec<_>, _> = data.entities.iter().map(|entity_data| entity_registry.deserialize_entity(entity_data)).collect();
+        let objects_res: Result<Vec<_>, _> = data.objects.iter().map(|object_data| object_registry.deserialize_object(object_data)).collect();
 
         let mut chunk = Chunk::new(pos);
         chunk.tiles = tiles_res?;
-        chunk.entities = entities_res?;
+        chunk.objects = objects_res?;
 
         Ok(chunk)
     }
 
-    pub fn get_entities_by_type(&self, type_tag: &str) -> Vec<&Box<dyn Entity>> {
-        let mut entities = Vec::new();
+    pub fn get_objects_by_type(&self, type_tag: &str) -> Vec<&Box<dyn Object>> {
+        let mut objects = Vec::new();
 
-        for entity in &self.entities {
-            if entity.get_type_tag() == type_tag {
-                entities.push(entity);
+        for obj in &self.objects {
+            if obj.get_type_tag() == type_tag {
+                objects.push(obj);
             }
         }
-        entities
+        objects
     }
 
     pub fn get_tiles_by_type(&self, type_tag: &str) -> Vec<&Box<dyn Tile>> {

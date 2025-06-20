@@ -4,8 +4,8 @@ use serde::{Serialize, Deserialize};
 use std::fs;
 
 use crate::{
-    Chunk, EntityRegistry, TileRegistry, BiomeRegistry,
-    DrawBatch, CHUNK_PIXELS, log_world, Tile, Entity
+    Chunk, ObjectRegistry, TileRegistry, BiomeRegistry,
+    DrawBatch, CHUNK_PIXELS, log_world, Tile, Object
 };
 
 #[derive(Serialize, Deserialize)]
@@ -16,7 +16,7 @@ pub struct WorldData {
 pub struct World {
     pub chunks: HashMap<(i32, i32), Chunk>,
     pub tile_registry: TileRegistry,
-    pub entity_registry: EntityRegistry,
+    pub object_registry: ObjectRegistry,
     pub biome_registry: BiomeRegistry,
     visible_chunks: Vec<(i32, i32)>,
     draw_batch: DrawBatch,
@@ -24,12 +24,12 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(world_name: &str, tile_registry: TileRegistry, entity_registry: EntityRegistry, biome_registry: BiomeRegistry) -> Self {
+    pub fn new(world_name: &str, tile_registry: TileRegistry, object_registry: ObjectRegistry, biome_registry: BiomeRegistry) -> Self {
         log_world!(log::Level::Info, "Creating world '{}'", world_name);
         Self {
             chunks: HashMap::new(),
             tile_registry,
-            entity_registry,
+            object_registry,
             biome_registry,
             visible_chunks: Vec::new(),
             draw_batch: DrawBatch::new(),
@@ -59,18 +59,18 @@ impl World {
         Ok(())
     }
 
-    pub fn load_world(save_dir: &str, tile_registry: TileRegistry, entity_registry: EntityRegistry, biome_registry: BiomeRegistry) -> Result<Self, String> {
+    pub fn load_world(save_dir: &str, tile_registry: TileRegistry, object_registry: ObjectRegistry, biome_registry: BiomeRegistry) -> Result<Self, String> {
         let world_data_path = format!("{}/world.json", save_dir);
         let data = fs::read_to_string(world_data_path).map_err(|e| e.to_string())?;
         let world_data: WorldData = serde_json::from_str(&data).map_err(|e| e.to_string())?;
 
-        let mut world = Self::new(&world_data.name, tile_registry, entity_registry, biome_registry);
+        let mut world = Self::new(&world_data.name, tile_registry, object_registry, biome_registry);
 
         let chunks_dir = format!("{}/chunks", save_dir);
         if let Ok(entries) = fs::read_dir(chunks_dir) {
             for entry in entries.flatten() {
                 if let Ok(chunk_data) = fs::read_to_string(entry.path()) {
-                    if let Ok(chunk) = Chunk::deserialize(&chunk_data, &world.tile_registry, &world.entity_registry) {
+                    if let Ok(chunk) = Chunk::deserialize(&chunk_data, &world.tile_registry, &world.object_registry) {
                         world.add_chunk(chunk);
                     }
                 }
@@ -86,10 +86,10 @@ impl World {
         let mut movements = Vec::new();
         for &chunk_pos in &self.visible_chunks {
             if let Some(chunk) = self.chunks.get(&chunk_pos) {
-                for (entity_index, entity) in chunk.entities.iter().enumerate() {
-                    let new_chunk_pos = self.get_chunk_coords(entity.get_pos());
+                for (obj_index, obj) in chunk.objects.iter().enumerate() {
+                    let new_chunk_pos = self.get_chunk_coords(obj.get_pos());
                     if new_chunk_pos != chunk_pos {
-                        movements.push((chunk_pos, new_chunk_pos, entity_index));
+                        movements.push((chunk_pos, new_chunk_pos, obj_index));
                     }
                 }
             }
@@ -103,13 +103,13 @@ impl World {
             }
         });
 
-        for (old_pos, new_pos, entity_index) in movements {
+        for (old_pos, new_pos, obj_index) in movements {
             if let Some(mut chunk) = self.chunks.remove(&old_pos) {
-                if entity_index < chunk.entities.len() {
-                    let entity = chunk.entities.remove(entity_index);
+                if obj_index < chunk.objects.len() {
+                    let obj = chunk.objects.remove(obj_index);
                     self.chunks.insert(old_pos, chunk);
                     if let Some(new_chunk) = self.chunks.get_mut(&new_pos) {
-                        new_chunk.entities.push(entity);
+                        new_chunk.objects.push(obj);
                     }
                 } else {
                     self.chunks.insert(old_pos, chunk);
@@ -117,7 +117,7 @@ impl World {
             }
         }
 
-        self.check_entity_collisions();
+        self.check_obj_collisions();
 
         let visible_chunks_copy = self.visible_chunks.clone();
         for chunk_pos in visible_chunks_copy {
@@ -127,33 +127,33 @@ impl World {
             }
         }
     }
-    fn check_entity_collisions(&mut self) {
-        let mut entities: Vec<Box<dyn Entity>> = Vec::new();
+    fn check_obj_collisions(&mut self) {
+        let mut objects: Vec<Box<dyn Object>> = Vec::new();
         let mut chunk_positions = Vec::new();
 
         for &chunk_pos in &self.visible_chunks {
             if let Some(chunk) = self.chunks.get_mut(&chunk_pos) {
-                for entity in chunk.entities.drain(..) {
-                    entities.push(entity);
+                for obj in chunk.objects.drain(..) {
+                    objects.push(obj);
                     chunk_positions.push(chunk_pos);
                 }
             }
         }
 
-        for i in 0..entities.len() {
-            for j in (i + 1)..entities.len() {
-                let (entity1, entity2) = entities.split_at_mut(j);
-                let entity1 = &mut entity1[i];
-                let entity2 = &mut entity2[0];
+        for i in 0..objects.len() {
+            for j in (i + 1)..objects.len() {
+                let (obj1, obj2) = objects.split_at_mut(j);
+                let obj1 = &mut obj1[i];
+                let obj2 = &mut obj2[0];
 
-                let pos1 = entity1.get_pos();
-                let velocity1 = entity1.get_velocity();
-                let size1 = entity1.get_size();
+                let pos1 = obj1.get_pos();
+                let velocity1 = obj1.get_velocity();
+                let size1 = obj1.get_size();
                 let next_pos1 = pos1 + velocity1;
 
-                let pos2 = entity2.get_pos();
-                let velocity2 = entity2.get_velocity();
-                let size2 = entity2.get_size();
+                let pos2 = obj2.get_pos();
+                let velocity2 = obj2.get_velocity();
+                let size2 = obj2.get_size();
                 let next_pos2 = pos2 + velocity2;
 
                 let will_collide = next_pos1.x < next_pos2.x + size2.x &&
@@ -168,18 +168,18 @@ impl World {
                 };
 
                 if will_collide && moving_towards_each_other {
-                    let entity1: &mut dyn Entity = &mut **entity1;
-                    let entity2: &mut dyn Entity = &mut **entity2;
+                    let obj1: &mut dyn Object = &mut **obj1;
+                    let obj2: &mut dyn Object = &mut **obj2;
                     
-                    entity1.collision(entity2);
-                    entity2.collision(entity1);
+                    obj1.collision(obj2);
+                    obj2.collision(obj1);
                 }
             }
         }
 
-        for (entity, &chunk_pos) in entities.into_iter().zip(chunk_positions.iter()) {
+        for (obj, &chunk_pos) in objects.into_iter().zip(chunk_positions.iter()) {
             if let Some(chunk) = self.chunks.get_mut(&chunk_pos) {
-                chunk.entities.push(entity);
+                chunk.objects.push(obj);
             }
         }
     }
@@ -196,7 +196,7 @@ impl World {
         self.draw_batch.clear();
         for &chunk_pos in &self.visible_chunks {
             if let Some(chunk) = self.chunks.get_mut(&chunk_pos) {
-                chunk.draw_entities(&mut self.draw_batch);
+                chunk.draw_objects(&mut self.draw_batch);
             }
         }
         self.draw_batch.draw();
@@ -219,18 +219,18 @@ impl World {
         )
     }
 
-    pub fn get_entities_by_type(&self, type_tag: &str) -> Vec<&Box<dyn Entity>> {
-        let mut entities = Vec::new();
+    pub fn get_objects_by_type(&self, type_tag: &str) -> Vec<&Box<dyn Object>> {
+        let mut objects = Vec::new();
         for &chunk_pos in &self.visible_chunks {
             if let Some(chunk) = self.chunks.get(&chunk_pos) {
-                for entity in &chunk.entities {
-                    if entity.get_type_tag() == type_tag {
-                        entities.push(entity);
+                for obj in &chunk.objects {
+                    if obj.get_type_tag() == type_tag {
+                        objects.push(obj);
                     }
                 }
             }
         }
-        entities
+        objects
     }
 
     pub fn get_tiles_by_type(&self, type_tag: &str) -> Vec<&Box<dyn Tile>> {

@@ -1,5 +1,5 @@
 use macroquad::math::Vec2;
-use crate::{DrawBatch, Entity, World};
+use crate::{DrawBatch, Object, World};
 use std::any::Any;
 use serde::{Serialize, Deserialize};
 use crate::core::save::vec2::Vec2Save;
@@ -16,7 +16,7 @@ pub trait Tile: Any + Send + Sync {
     fn set_pos(&mut self, pos: Vec2);
     fn set_size(&mut self, _size: Vec2) {}
 
-    fn interact(&mut self, _other: &mut dyn Entity) -> bool {
+    fn interact(&mut self, _other: &mut dyn Object) -> bool {
         false
     }
 

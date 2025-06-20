@@ -4,7 +4,7 @@ pub trait Biome: Send + Sync {
     fn get_type_tag(&self) -> &'static str;
     fn is_suitable(&self, height: f64, moisture: f64, temperature: f64) -> bool;
     fn get_ground_tile_type(&self) -> &'static str;
-    fn get_spawnable_entities(&self) -> Vec<(&'static str, f32)>;
+    fn get_spawnable_objects(&self) -> Vec<(&'static str, f32)>;
     fn clone_box(&self) -> Box<dyn Biome>;
 }
 
