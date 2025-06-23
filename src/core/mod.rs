@@ -4,4 +4,4 @@ pub mod object;
 pub mod save;
 pub mod tile;
 pub mod world;
-pub mod menu;
+pub mod ui;

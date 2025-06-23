@@ -1,6 +1,9 @@
 use log::{LevelFilter, Log, Metadata, Record};
 use std::sync::Once;
 
+/// Macro for logging messages with the "world" target.
+/// 
+/// Usage: `log_world!(log::Level::Info, "message")`
 #[macro_export]
 macro_rules! log_world {
     ($level:expr, $($arg:tt)+) => {
@@ -8,6 +11,9 @@ macro_rules! log_world {
     };
 }
 
+/// Macro for logging messages with the "chunk" target.
+/// 
+/// Usage: `log_chunk!(log::Level::Debug, "message")`
 #[macro_export]
 macro_rules! log_chunk {
     ($level:expr, $($arg:tt)+) => {
@@ -15,6 +21,9 @@ macro_rules! log_chunk {
     };
 }
 
+/// Macro for logging messages with the "render" target.
+/// 
+/// Usage: `log_render!(log::Level::Trace, "message")`
 #[macro_export]
 macro_rules! log_render {
     ($level:expr, $($arg:tt)+) => {
@@ -22,6 +31,9 @@ macro_rules! log_render {
     };
 }
 
+/// Macro for logging messages with the "entity" target.
+/// 
+/// Usage: `log_entity!(log::Level::Warn, "message")`
 #[macro_export]
 macro_rules! log_entity {
     ($level:expr, $($arg:tt)+) => {
@@ -29,9 +41,7 @@ macro_rules! log_entity {
     };
 }
 
-
-static INIT: Once = Once::new();
-
+/// Logger implementation for the game, supporting different log levels for different targets.
 pub struct GameLogger {
     world_level: LevelFilter,
     chunk_level: LevelFilter,
@@ -40,6 +50,8 @@ pub struct GameLogger {
 }
 
 impl GameLogger {
+    /// Initializes the global logger instance.
+    /// This should be called once at the start of the program.
     pub fn init() {
         INIT.call_once(|| {
             let logger = GameLogger {
@@ -54,6 +66,12 @@ impl GameLogger {
         });
     }
 
+    /// Determines if a log message should be logged based on the target and level.
+    ///
+    /// - `target`: The log target string.
+    /// - `level`: The log level.
+    ///
+    /// Returns `true` if the message should be logged, `false` otherwise.
     fn should_log(&self, target: &str, level: log::Level) -> bool {
         let filter = match target {
             "world" => self.world_level,
@@ -93,3 +111,5 @@ impl Log for GameLogger {
 
     fn flush(&self) {}
 }
+
+static INIT: Once = Once::new();

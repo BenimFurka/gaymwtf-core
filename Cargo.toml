@@ -1,6 +1,6 @@
 [package]
 name = "gaymwtf-core"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["BenimFurka <furkajr@mail.ru>"]
 description = "A modular 2D game engine and framework built with Rust and Macroquad."
@@ -10,15 +10,15 @@ keywords = ["game-engine", "2d", "macroquad", "ecs"]
 categories = ["game-engines", "rendering"]
 
 [dependencies]
-macroquad = "0.4.5"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-lazy_static = "1.4.0"
-futures = "0.3"
-log = { version = "0.4", features = ["std"] }
-miniquad = "0.4.5"
-anyhow = "1.0.86"
-image = { version = "0.24.9", default-features = false, features = ["png"] }
+anyhow = "1.0.98"
+futures = "0.3.31"
+image = { version = "0.25.6", default-features = false, features = ["png"] }
+lazy_static = "1.5.0"
+log = { version = "0.4.27", features = ["std"] }
+macroquad = "0.4.14"
+miniquad = "0.4.8"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
 
 [lib]
 name = "gaymwtf_core"
@@ -28,5 +28,13 @@ path = "src/lib.rs"
 debug = false
 
 [[example]]
-name = "gaymwtf-test"
+name = "example"
 doc = true
+
+[[example]]
+name = "world"
+doc = false
+
+[[example]]
+name = "ui"
+doc = false

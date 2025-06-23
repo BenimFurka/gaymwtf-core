@@ -182,7 +182,7 @@ async fn setup() -> World {
     world
 }
 
-#[macroquad::main("gaymwtf-test")]
+#[macroquad::main("World Example")]
 async fn main() {
     let mut world = setup().await;
     let mut camera = Camera2D::from_display_rect(Rect::new(0.0, 0.0, 800.0, 600.0));

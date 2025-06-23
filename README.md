@@ -4,8 +4,13 @@
 [![Macroquad](https://img.shields.io/badge/macroquad-0.4.x-blue)](https://github.com/not-fl3/macroquad)
 
 [![Crates.io](https://img.shields.io/crates/v/gaymwtf-core)](https://crates.io/crates/gaymwtf-core)
+[![Docs.rs](https://img.shields.io/docsrs/gaymwtf-core)](https://docs.rs/gaymwtf-core)
+
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-active-brightgreen)
+
+[![Downloads](https://img.shields.io/crates/d/gaymwtf-core)](https://crates.io/crates/gaymwtf-core)
+[![Downloads (latest)](https://img.shields.io/crates/dv/gaymwtf-core)](https://crates.io/crates/gaymwtf-core)
 
 A modular 2D game engine and framework built with Rust and Macroquad.
 
@@ -18,6 +23,11 @@ A modular 2D game engine and framework built with Rust and Macroquad.
 - **Menu System**: Simple menu system for creating in-game menus
 - **Serialization**: Built-in support for saving and loading game state
 - **Rendering**: 2D rendering powered by Macroquad
+
+## Documentation
+
+- [API documentation on docs.rs](https://docs.rs/gaymwtf-core)
+- [Changelog](CHANGELOG.md)
 
 ## Getting Started
 
@@ -32,13 +42,14 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-gaymwtf-core = "0.1.0"
+gaymwtf-core = "0.2.0"
+macroquad = "0.4.14"
 ```
 
 Or run:
 
 ```bash
-cargo add gaymwtf-core
+cargo add gaymwtf-core macroquad
 ```
 
 ## Usage
@@ -53,11 +64,11 @@ use macroquad::prelude::*;
 async fn main() {
     // Initialize registries
     let tile_registry = TileRegistry::new();
-    let entity_registry = EntityRegistry::new();
+    let object_registry = ObjectRegistry::new();
     let biome_registry = BiomeRegistry::new();
     
     // Create a new world
-    let mut world = World::new("MyGameWorld", tile_registry, entity_registry, biome_registry);
+    let mut world = World::new("MyGameWorld", tile_registry, object_registry, biome_registry);
     
     let mut camera = Camera2D::from_display_rect(Rect::new(0.0, 0.0, 800.0, 600.0));
     camera.zoom.y = -camera.zoom.y;
@@ -81,19 +92,33 @@ async fn main() {
 
 ## Examples
 
-### Test Project
+### Example Project
 
-The repository includes a `gaymwtf-test` example that serves as a working example of how to use the game engine. This test project demonstrates:
+The repository includes an example that serves as a working example of how to use the game engine. This test project demonstrates:
 
 - Setting up custom tiles, entities, and biomes
 - World generation
 - Basic game loop implementation
 - Rendering and input handling
 
-To run the test project:
+To run the example project:
 
 ```bash
-cargo run --example gaymwtf-test
+cargo run --example world
+```
+
+### UI Example Project
+
+Also the repository includes an other example that serves as a working example of how to use the game engine for UI. This example project demonstrates:
+
+- Setting up a menu system
+- Button and toggle button implementation
+- Rendering and input handling
+
+To run the example project:
+
+```bash
+cargo run --example ui
 ```
 
 ## Project Structure
@@ -101,10 +126,10 @@ cargo run --example gaymwtf-test
 - `src/core/`: Core game systems (world, entities, tiles, biomes)
   - `world/`: World management
   - `chunk/`: Chunk system
-  - `entity/`: Entity system and implementations
+  - `object/`: Object system and implementations
   - `tile/`: Tile system and implementations
   - `biome/`: Biome system and implementations
-  - `menu/`: Menu system
+  - `ui/`: UI system and implementations
   - `save/`: Vec2Save
 - `src/engine/`: Rendering and other engine-specific code
 - `src/utils/`: Utility functions and helpers
