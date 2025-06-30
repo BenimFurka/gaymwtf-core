@@ -6,7 +6,7 @@
 [![Crates.io](https://img.shields.io/crates/v/gaymwtf-core)](https://crates.io/crates/gaymwtf-core)
 [![Docs.rs](https://img.shields.io/docsrs/gaymwtf-core)](https://docs.rs/gaymwtf-core)
 
-[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-LGPLv3-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-active-brightgreen)
 
 [![Downloads](https://img.shields.io/crates/d/gaymwtf-core)](https://crates.io/crates/gaymwtf-core)
@@ -136,7 +136,7 @@ cargo run --example ui
 
 ## License
 
-This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the LGPL v3 License - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
