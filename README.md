@@ -42,7 +42,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-gaymwtf-core = "0.2.0"
+gaymwtf-core = "0.2.1"
 macroquad = "0.4.14"
 ```
 
